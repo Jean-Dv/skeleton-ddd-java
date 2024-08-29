@@ -1,0 +1,4 @@
+rootProject.name = 'java-ddd-skeleton'
+
+include ':shared'
+project(':shared').projectDir = new File('src/shared')

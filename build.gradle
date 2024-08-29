@@ -1,0 +1,163 @@
+buildscript {
+  repositories {
+    mavenCentral()
+  }
+  dependencies {
+    classpath("org.springframework.boot:spring-boot-gradle-plugin:3.3.3")
+  }
+}
+
+plugins {
+  id "com.diffplug.spotless" version "6.25.0"
+}
+
+spotless {
+  java {
+    prettier(['prettier': '3.3.3', 'prettier-plugin-java': '2.6.4'])
+      .config(['parser': 'java', 'useTabs': true, 'printWidth': 120])
+
+    importOrder('\\#', 'java', '', 'dev.jean')
+    removeUnusedImports()
+
+    endWithNewline()
+
+    formatAnnotations()
+  }
+}
+
+// Common for all projects
+allprojects {
+  apply plugin: 'java'
+  apply plugin: 'io.spring.dependency-management'
+  apply plugin: 'org.springframework.boot'
+
+  java {
+    sourceCompatibility = JavaVersion.VERSION_22
+    targetCompatibility = JavaVersion.VERSION_22
+  }
+
+  repositories {
+    mavenCentral()
+    maven { url 'https://repo.spring.io/milestone' }
+  }
+  
+  ext {
+    set('springCloudVersion', "Hoxton.M3")
+    set('elasticsearchVersion', "8.15.0")
+  }
+
+  dependencies {
+    // Production
+    implementation 'org.apache.logging.log4j:log4j-core:2.23.1'
+    implementation 'org.apache.logging.log4j:log4j-api:2.23.1'
+    implementation 'com.vlkan.log4j2:log4j2-logstash-layout:1.0.5'
+    implementation 'io.github.cdimascio:dotenv-java:3.0.1'
+    implementation 'org.hibernate.orm:hibernate-core:6.6.0.Final'
+    implementation 'jakarta.persistence:jakarta.persistence-api:3.2.0'
+    implementation 'org.springframework:spring-orm:6.1.12'
+    implementation 'org.springframework:spring-context-support:6.1.12'
+    implementation 'org.apache.tomcat:tomcat-dbcp:11.0.0-M22'
+    implementation 'com.sun.xml.bind:jaxb-impl:4.0.5'
+    implementation 'jakarta.xml.bind:jakarta.xml.bind-api:4.0.2'
+    implementation 'org.reflections:reflections:0.10.2'
+    implementation 'com.google.guava:guava:33.3.0-jre'
+    implementation 'org.springframework.boot:spring-boot-starter-amqp:3.3.3'
+    implementation "org.elasticsearch.client:elasticsearch-rest-client:${elasticsearchVersion}"
+    implementation "org.elasticsearch.client:elasticsearch-rest-high-level-client:7.17.23"
+    implementation 'com.mysql:mysql-connector-j:9.0.0'
+
+    // Test
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.11.0'
+    testImplementation 'org.mockito:mockito-core:5.13.0'
+    testImplementation 'com.github.javafaker:javafaker:1.0.2'
+    testImplementation 'org.junit.jupiter:junit-jupiter-engine:5.11.0'
+  }
+
+  dependencyManagement {
+    imports {
+      mavenBom "org.springframework.cloud:spring-cloud-dependencies:${springCloudVersion}"
+    }
+  }
+
+  test {
+    useJUnitPlatform()
+
+    testLogging {
+      events 'passed', 'skipped', 'failed'
+    }
+  }
+
+  task view_paths {
+    doLast { task ->
+      println "$task.project.name"
+      println "------------------"
+      println "Main: $sourceSets.main.java.srcDirTrees"
+      println "   Resources: $sourceSets.main.resources.srcDirTrees"
+      println "Tests: $sourceSets.test.java.srcDirTrees"
+      println "   Resources: $sourceSets.test.resources.srcDirTrees"
+    }
+  }
+}
+
+sourceSets {
+  main {
+    java { srcDirs = ['apps/main'] }
+    resources { srcDirs = ['apps/main/resources'] }
+  }
+
+  test {
+    java { srcDirs = ['apps/test'] }
+    resources { srcDirs = ['apps/test/resources'] }
+  }
+}
+
+// All subprojects (located in src/*)
+subprojects {
+  group = "dev.jean.${rootProject.name}"
+
+  sourceSets {
+    main {
+      java { srcDirs = ['main'] }
+      resources { srcDirs = ['main/resources'] }
+    }
+    test {
+      java { srcDirs = ['test'] }
+      resources { srcDirs = ['test/resources'] }
+    }
+  }
+
+  dependencies {
+    implementation 'org.springframework.boot:spring-boot-starter:3.3.3'
+    testImplementation rootProject.sourceSets.main.output
+    testImplementation 'org.springframework.boot:spring-boot-starter-test:3.3.3'
+
+    if (project.name != "shared") {
+      implementation project(':shared')
+      testImplementation project(':shared').sourceSets.test.output
+    }
+  }
+
+  bootJar {
+    enabled = false
+  }
+
+  jar {
+    enabled = true
+  }
+}
+
+
+bootJar {
+  archiveBaseName.set('java-ddd-skeleton')
+  archiveVersion.set('0.0.1')
+  duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+}
+
+dependencies {
+  implementation 'org.springframework.boot:spring-boot-starter-web:3.3.3'
+
+  implementation project(':shared')
+
+  testImplementation 'org.springframework.boot:spring-boot-starter-test:3.3.3'
+  testImplementation project(":shared").sourceSets.test.output
+}
