@@ -7,24 +7,6 @@ buildscript {
   }
 }
 
-plugins {
-  id "com.diffplug.spotless" version "6.25.0"
-}
-
-spotless {
-  java {
-    prettier(['prettier': '3.3.3', 'prettier-plugin-java': '2.6.4'])
-      .config(['parser': 'java', 'useTabs': true, 'printWidth': 120])
-
-    importOrder('\\#', 'java', '', 'dev.jean')
-    removeUnusedImports()
-
-    endWithNewline()
-
-    formatAnnotations()
-  }
-}
-
 // Common for all projects
 allprojects {
   apply plugin: 'java'
@@ -67,10 +49,9 @@ allprojects {
     implementation 'com.mysql:mysql-connector-j:9.0.0'
 
     // Test
-    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.11.0'
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.11.0'
     testImplementation 'org.mockito:mockito-core:5.13.0'
-    testImplementation 'com.github.javafaker:javafaker:1.0.2'
-    testImplementation 'org.junit.jupiter:junit-jupiter-engine:5.11.0'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
   }
 
   dependencyManagement {
